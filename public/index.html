@@ -347,7 +347,7 @@
 
   <div id="canvas-area">
     <div id="canvas-header">
-      <h2 onclick="goBack()">Math Canvas</h2>
+      <h2 id="home-link">Math Canvas</h2>
       <div id="current-problem">— + — = ?</div>
     </div>
 
@@ -513,11 +513,13 @@ function startApp(mode) {
 }
 
 function goBack() {
+  clearCanvas();
   document.getElementById('app').classList.remove('visible');
   document.getElementById('overlay').classList.remove('show');
   document.getElementById('landing').style.display = 'flex';
-  clearCanvas();
 }
+
+document.getElementById('home-link').addEventListener('click', goBack);
 
 /* ── Drawing ── */
 function pos(e) {
