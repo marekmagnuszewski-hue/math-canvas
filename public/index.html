@@ -113,7 +113,10 @@
       font-size: 1.3rem;
       color: var(--green);
       letter-spacing: 0.02em;
+      cursor: pointer;
+      text-decoration: none;
     }
+    #canvas-header h2:hover { text-decoration: underline; }
 
     #current-problem {
       font-size: clamp(1.6rem, 3.5vw, 2.4rem);
@@ -344,7 +347,7 @@
 
   <div id="canvas-area">
     <div id="canvas-header">
-      <h2>Math Canvas</h2>
+      <h2 onclick="goBack()">Math Canvas</h2>
       <div id="current-problem">— + — = ?</div>
     </div>
 
