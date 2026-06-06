@@ -461,7 +461,9 @@ function renderList() {
                : t.status === 'wrong'  ? '&#10007;'
                : i === taskIndex       ? '&#9998;'
                : '';
-    li.innerHTML = `<span>${i + 1}. ${t.expr} = ?</span><span class="ic">${icon}</span>`;
+    const answer = (t.status === 'correct' || t.status === 'wrong')
+      ? t.answer : '?';
+    li.innerHTML = `<span>${i + 1}. ${t.expr} = ${answer}</span><span class="ic">${icon}</span>`;
     ul.appendChild(li);
   });
 }
