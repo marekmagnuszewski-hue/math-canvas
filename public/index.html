@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="pl">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
@@ -49,34 +49,33 @@
     }
 
     .mode-row {
-      display: flex;
-      gap: 2rem;
-      flex-wrap: wrap;
-      justify-content: center;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1.5rem;
     }
 
     .mode-btn {
-      width: 210px;
-      height: 210px;
+      width: 180px;
+      height: 180px;
       border: 3px solid var(--green);
       background: transparent;
       color: var(--green);
       font-family: 'Georgia', serif;
-      font-size: 1.35rem;
+      font-size: 1.2rem;
       cursor: pointer;
       border-radius: 10px;
       display: flex;
       flex-direction: column;
       align-items: center;
       justify-content: center;
-      gap: 1rem;
+      gap: 0.8rem;
       transition: background 0.18s, color 0.18s, transform 0.12s;
       -webkit-user-select: none;
       user-select: none;
     }
 
     .mode-btn .symbol {
-      font-size: 4rem;
+      font-size: 3.5rem;
       line-height: 1;
       font-weight: 300;
     }
@@ -319,15 +318,23 @@
 <!-- ═══════════════════════ LANDING ═══════════════════════════ -->
 <div id="landing">
   <h1>Math Canvas</h1>
-  <p class="subtitle">Write your answers by hand — AI checks them</p>
+  <p class="subtitle">Pisz odpowiedzi ręcznie — AI je sprawdza</p>
   <div class="mode-row">
     <button class="mode-btn" onclick="startApp('addition')">
       <span class="symbol">+</span>
-      Addition
+      Dodawanie
     </button>
     <button class="mode-btn" onclick="startApp('subtraction')">
       <span class="symbol">−</span>
-      Subtraction
+      Odejmowanie
+    </button>
+    <button class="mode-btn" onclick="startApp('multiplication')">
+      <span class="symbol">×</span>
+      Mnożenie
+    </button>
+    <button class="mode-btn" onclick="startApp('division')">
+      <span class="symbol">÷</span>
+      Dzielenie
     </button>
   </div>
 </div>
@@ -342,14 +349,14 @@
     </div>
 
     <div class="toolbar">
-      <button class="tbtn on" id="pen-btn"    onclick="setTool('pen')">Pen</button>
-      <button class="tbtn"    id="eraser-btn" onclick="setTool('eraser')">Eraser</button>
+      <button class="tbtn on" id="pen-btn"    onclick="setTool('pen')">Pióro</button>
+      <button class="tbtn"    id="eraser-btn" onclick="setTool('eraser')">Gumka</button>
       <input  type="range" id="size-range" min="3" max="32" value="9"
               oninput="updateSize(this.value)" />
       <span id="size-lbl">9 px</span>
-      <button class="tbtn" onclick="clearCanvas()">Clear</button>
+      <button class="tbtn" onclick="clearCanvas()">Wyczyść</button>
       <button class="tbtn submit" id="submit-btn" onclick="submitAnswer()">
-        Check Answer &rarr;
+        Sprawdź &rarr;
       </button>
     </div>
 
@@ -358,13 +365,13 @@
   </div>
 
   <div id="sidebar">
-    <h2>Tasks</h2>
+    <h2>Zadania</h2>
     <div class="score-box">
       <strong id="score-val">0</strong>
-      correct out of <span id="score-tot">10</span>
+      poprawnych z <span id="score-tot">10</span>
     </div>
     <ul id="task-list"></ul>
-    <button id="back-btn" onclick="goBack()">&#8592; Back to Menu</button>
+    <button id="back-btn" onclick="goBack()">&#8592; Menu</button>
   </div>
 
 </div>
@@ -372,10 +379,10 @@
 <!-- ═══════════════════════ COMPLETION ═══════════════════════ -->
 <div id="overlay">
   <div class="card">
-    <h2>All Done!</h2>
+    <h2>Koniec!</h2>
     <div class="big" id="final-score">0 / 10</div>
     <p id="final-msg"></p>
-    <button onclick="goBack()">Play Again</button>
+    <button onclick="goBack()">Zagraj ponownie</button>
   </div>
 </div>
 
@@ -436,11 +443,22 @@ function makeTasks(mode) {
       b = Math.floor(Math.random() * 60) + 1;
       answer = a + b;
       expr   = `${a} + ${b}`;
-    } else {
+    } else if (mode === 'subtraction') {
       a = Math.floor(Math.random() * 80) + 20;
       b = Math.floor(Math.random() * (a + 1));
       answer = a - b;
       expr   = `${a} − ${b}`;
+    } else if (mode === 'multiplication') {
+      a = Math.floor(Math.random() * 12) + 1;
+      b = Math.floor(Math.random() * 12) + 1;
+      answer = a * b;
+      expr   = `${a} × ${b}`;
+    } else {
+      // division: pick factors so result is always a whole number
+      answer = Math.floor(Math.random() * 12) + 1;
+      b      = Math.floor(Math.random() * 12) + 1;
+      a      = answer * b;
+      expr   = `${a} ÷ ${b}`;
     }
     out.push({ expr, answer, status: 'pending' });
   }
@@ -543,11 +561,11 @@ async function submitAnswer() {
 
   const statusEl  = document.getElementById('status');
   const submitBtn = document.getElementById('submit-btn');
-  submitting          = true;
-  submitBtn.disabled  = true;
+  submitting         = true;
+  submitBtn.disabled = true;
 
-  statusEl.className  = 'wait';
-  statusEl.innerHTML  = '<span class="spinner"></span>Analysing your handwriting…';
+  statusEl.className = 'wait';
+  statusEl.innerHTML = '<span class="spinner"></span>Analizuję pismo…';
 
   const dataURL    = canvas.toDataURL('image/png');
   const base64Data = dataURL.split(',')[1];
@@ -568,23 +586,23 @@ async function submitAnswer() {
     const { recognized } = await res.json();
 
     if (recognized === 'blank') {
-      statusEl.className  = 'err';
-      statusEl.textContent = 'Nothing written yet — draw your answer and try again.';
+      statusEl.className   = 'err';
+      statusEl.textContent = 'Nic nie napisano — narysuj odpowiedź i spróbuj ponownie.';
       submitting = false; submitBtn.disabled = false;
       return;
     }
 
     if (recognized === 'unclear') {
-      statusEl.className  = 'err';
-      statusEl.textContent = "Couldn’t read that — please write more clearly and try again.";
+      statusEl.className   = 'err';
+      statusEl.textContent = 'Nie można odczytać — pisz wyraźniej i spróbuj ponownie.';
       submitting = false; submitBtn.disabled = false;
       return;
     }
 
     const userNum = parseInt(recognized, 10);
     if (isNaN(userNum)) {
-      statusEl.className  = 'err';
-      statusEl.textContent = `Unrecognised response (“${recognized}”) — try writing more clearly.`;
+      statusEl.className   = 'err';
+      statusEl.textContent = `Nierozpoznana odpowiedź ("${recognized}") — pisz wyraźniej.`;
       submitting = false; submitBtn.disabled = false;
       return;
     }
@@ -593,12 +611,12 @@ async function submitAnswer() {
       task.status = 'correct';
       score++;
       document.getElementById('score-val').textContent = score;
-      statusEl.className  = 'ok';
-      statusEl.textContent = `Correct! ${task.expr} = ${task.answer} ✓`;
+      statusEl.className   = 'ok';
+      statusEl.textContent = `Dobrze! ${task.expr} = ${task.answer} ✓`;
     } else {
       task.status = 'wrong';
-      statusEl.className  = 'err';
-      statusEl.textContent = `Not quite — the answer is ${task.answer}. You wrote ${userNum}.`;
+      statusEl.className   = 'err';
+      statusEl.textContent = `Nie tym razem — odpowiedź to ${task.answer}. Napisałeś/aś ${userNum}.`;
     }
 
     renderList();
@@ -616,8 +634,8 @@ async function submitAnswer() {
     }, 2200);
 
   } catch (err) {
-    statusEl.className  = 'err';
-    statusEl.textContent = 'Error: ' + err.message;
+    statusEl.className   = 'err';
+    statusEl.textContent = 'Błąd: ' + err.message;
     console.error(err);
     submitting = false; submitBtn.disabled = false;
   }
@@ -627,11 +645,11 @@ function showCompletion() {
   const pct = score / tasks.length;
   document.getElementById('final-score').textContent = `${score} / ${tasks.length}`;
   document.getElementById('final-msg').textContent   =
-      pct === 1  ? 'Perfect score! Outstanding work!'
-    : pct >= 0.8 ? 'Great job — almost perfect!'
-    : pct >= 0.6 ? 'Good effort! Keep practising.'
-    : pct >= 0.4 ? 'Room to grow — keep going!'
-    :              'Practice makes perfect — try again!';
+      pct === 1  ? 'Idealny wynik! Znakomita robota!'
+    : pct >= 0.8 ? 'Świetnie — prawie idealnie!'
+    : pct >= 0.6 ? 'Dobry wysiłek! Ćwicz dalej.'
+    : pct >= 0.4 ? 'Jest jeszcze pole do poprawy — nie poddawaj się!'
+    :              'Ćwiczenie czyni mistrza — spróbuj ponownie!';
   document.getElementById('overlay').classList.add('show');
 }
 
