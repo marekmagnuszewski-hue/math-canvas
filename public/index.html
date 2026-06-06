@@ -1,0 +1,645 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Math Canvas</title>
+  <style>
+    :root {
+      --bg:        #F3F0E8;
+      --bg-canvas: #FDFAF3;
+      --text:      #1A1A1A;
+      --green:     #1B4332;
+      --green-mid: #2D6A4F;
+      --green-lt:  #52B788;
+      --border:    #C9C1AE;
+      --sidebar-w: 300px;
+    }
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Georgia', serif;
+      background: var(--bg);
+      color: var(--text);
+      height: 100dvh;
+      overflow: hidden;
+    }
+
+    /* ── LANDING ─────────────────────────────────────────────── */
+    #landing {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      height: 100dvh;
+      gap: 2.5rem;
+    }
+
+    #landing h1 {
+      font-size: clamp(2.5rem, 6vw, 4.5rem);
+      color: var(--green);
+      letter-spacing: -1px;
+    }
+
+    #landing .subtitle {
+      font-size: 1.15rem;
+      color: #7A7060;
+      letter-spacing: 0.03em;
+    }
+
+    .mode-row {
+      display: flex;
+      gap: 2rem;
+      flex-wrap: wrap;
+      justify-content: center;
+    }
+
+    .mode-btn {
+      width: 210px;
+      height: 210px;
+      border: 3px solid var(--green);
+      background: transparent;
+      color: var(--green);
+      font-family: 'Georgia', serif;
+      font-size: 1.35rem;
+      cursor: pointer;
+      border-radius: 10px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 1rem;
+      transition: background 0.18s, color 0.18s, transform 0.12s;
+      -webkit-user-select: none;
+      user-select: none;
+    }
+
+    .mode-btn .symbol {
+      font-size: 4rem;
+      line-height: 1;
+      font-weight: 300;
+    }
+
+    .mode-btn:hover  { background: var(--green); color: var(--bg); }
+    .mode-btn:active { transform: scale(0.97); }
+
+    /* ── APP SHELL ───────────────────────────────────────────── */
+    #app {
+      display: none;
+      height: 100dvh;
+    }
+
+    #app.visible { display: flex; }
+
+    /* ── CANVAS AREA ─────────────────────────────────────────── */
+    #canvas-area {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      padding: 1.25rem 1.5rem 1rem;
+      gap: 0.9rem;
+      min-width: 0;
+    }
+
+    #canvas-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 1rem;
+      flex-wrap: wrap;
+    }
+
+    #canvas-header h2 {
+      font-size: 1.3rem;
+      color: var(--green);
+      letter-spacing: 0.02em;
+    }
+
+    #current-problem {
+      font-size: clamp(1.6rem, 3.5vw, 2.4rem);
+      font-weight: bold;
+      padding: 0.4rem 1.4rem;
+      background: var(--green);
+      color: var(--bg);
+      border-radius: 7px;
+      letter-spacing: 0.05em;
+    }
+
+    .toolbar {
+      display: flex;
+      align-items: center;
+      gap: 0.6rem;
+      flex-wrap: wrap;
+    }
+
+    .tbtn {
+      padding: 0.42rem 0.95rem;
+      border: 2px solid var(--green);
+      background: transparent;
+      color: var(--green);
+      font-family: 'Georgia', serif;
+      font-size: 0.88rem;
+      cursor: pointer;
+      border-radius: 5px;
+      transition: background 0.14s, color 0.14s;
+      -webkit-user-select: none;
+      user-select: none;
+    }
+
+    .tbtn:hover, .tbtn.on { background: var(--green); color: var(--bg); }
+
+    .tbtn.submit {
+      background: var(--green);
+      color: var(--bg);
+      font-size: 0.95rem;
+      padding: 0.48rem 1.3rem;
+      margin-left: auto;
+    }
+    .tbtn.submit:hover    { background: var(--green-mid); }
+    .tbtn.submit:disabled { opacity: 0.5; cursor: not-allowed; }
+
+    #size-range {
+      -webkit-appearance: none;
+      width: 80px;
+      height: 4px;
+      background: var(--green);
+      border-radius: 2px;
+      cursor: pointer;
+    }
+    #size-range::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      width: 15px; height: 15px;
+      border-radius: 50%;
+      background: var(--green);
+    }
+
+    #size-lbl { font-size: 0.8rem; color: var(--green); min-width: 28px; }
+
+    #draw-canvas {
+      flex: 1;
+      background: var(--bg-canvas);
+      border: 2px solid var(--border);
+      border-radius: 8px;
+      display: block;
+      touch-action: none;
+    }
+
+    #draw-canvas.eraser-cursor { cursor: cell; }
+    #draw-canvas.pen-cursor    { cursor: crosshair; }
+
+    #status {
+      height: 1.8rem;
+      line-height: 1.8rem;
+      text-align: center;
+      font-size: 1.05rem;
+      font-weight: bold;
+    }
+    #status.ok   { color: #2D6A4F; }
+    #status.err  { color: #C0392B; }
+    #status.wait { color: #888; font-style: italic; font-weight: normal; }
+
+    /* ── SIDEBAR ─────────────────────────────────────────────── */
+    #sidebar {
+      width: var(--sidebar-w);
+      background: var(--green);
+      color: var(--bg);
+      display: flex;
+      flex-direction: column;
+      padding: 1.4rem 1.2rem 1.2rem;
+      gap: 1rem;
+      overflow-y: auto;
+      flex-shrink: 0;
+    }
+
+    #sidebar h2 {
+      font-size: 1.3rem;
+      border-bottom: 1px solid rgba(243,240,232,0.28);
+      padding-bottom: 0.7rem;
+    }
+
+    .score-box {
+      text-align: center;
+      font-size: 1rem;
+      opacity: 0.85;
+    }
+    .score-box strong { font-size: 2rem; display: block; opacity: 1; }
+
+    #task-list {
+      list-style: none;
+      display: flex;
+      flex-direction: column;
+      gap: 0.45rem;
+      flex: 1;
+    }
+
+    .ti {
+      padding: 0.65rem 0.9rem;
+      background: rgba(243,240,232,0.08);
+      border-left: 3px solid transparent;
+      border-radius: 5px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 0.95rem;
+    }
+    .ti.active  { background: rgba(243,240,232,0.18); border-left-color: #95D5B2; }
+    .ti.correct { border-left-color: #52B788; opacity: 0.65; }
+    .ti.wrong   { border-left-color: #E57373; opacity: 0.65; }
+    .ti .ic     { font-size: 1.1rem; }
+
+    #back-btn {
+      margin-top: auto;
+      padding: 0.55rem;
+      background: transparent;
+      border: 1px solid rgba(243,240,232,0.35);
+      color: var(--bg);
+      font-family: 'Georgia', serif;
+      font-size: 0.88rem;
+      cursor: pointer;
+      border-radius: 5px;
+      transition: background 0.14s;
+    }
+    #back-btn:hover { background: rgba(243,240,232,0.1); }
+
+    /* ── COMPLETION OVERLAY ──────────────────────────────────── */
+    #overlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(20,20,20,0.82);
+      align-items: center;
+      justify-content: center;
+      z-index: 200;
+    }
+    #overlay.show { display: flex; }
+
+    .card {
+      background: var(--bg);
+      border-radius: 12px;
+      padding: 3rem 3.5rem;
+      text-align: center;
+      display: flex;
+      flex-direction: column;
+      gap: 1.2rem;
+      max-width: 380px;
+      width: 90%;
+    }
+    .card h2    { font-size: 2rem; color: var(--green); }
+    .card .big  { font-size: 3.8rem; font-weight: bold; }
+    .card p     { color: #7A7060; font-size: 1.05rem; }
+    .card button {
+      padding: 0.75rem 2rem;
+      background: var(--green);
+      color: var(--bg);
+      border: none;
+      border-radius: 6px;
+      font-family: 'Georgia', serif;
+      font-size: 1.05rem;
+      cursor: pointer;
+      transition: background 0.15s;
+    }
+    .card button:hover { background: var(--green-mid); }
+
+    .spinner {
+      display: inline-block;
+      width: 14px; height: 14px;
+      border: 2px solid rgba(136,136,136,0.3);
+      border-top-color: #888;
+      border-radius: 50%;
+      animation: spin 0.7s linear infinite;
+      vertical-align: middle;
+      margin-right: 6px;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+  </style>
+</head>
+<body>
+
+<!-- ═══════════════════════ LANDING ═══════════════════════════ -->
+<div id="landing">
+  <h1>Math Canvas</h1>
+  <p class="subtitle">Write your answers by hand — AI checks them</p>
+  <div class="mode-row">
+    <button class="mode-btn" onclick="startApp('addition')">
+      <span class="symbol">+</span>
+      Addition
+    </button>
+    <button class="mode-btn" onclick="startApp('subtraction')">
+      <span class="symbol">−</span>
+      Subtraction
+    </button>
+  </div>
+</div>
+
+<!-- ═══════════════════════ APP ════════════════════════════════ -->
+<div id="app">
+
+  <div id="canvas-area">
+    <div id="canvas-header">
+      <h2>Math Canvas</h2>
+      <div id="current-problem">— + — = ?</div>
+    </div>
+
+    <div class="toolbar">
+      <button class="tbtn on" id="pen-btn"    onclick="setTool('pen')">Pen</button>
+      <button class="tbtn"    id="eraser-btn" onclick="setTool('eraser')">Eraser</button>
+      <input  type="range" id="size-range" min="3" max="32" value="9"
+              oninput="updateSize(this.value)" />
+      <span id="size-lbl">9 px</span>
+      <button class="tbtn" onclick="clearCanvas()">Clear</button>
+      <button class="tbtn submit" id="submit-btn" onclick="submitAnswer()">
+        Check Answer &rarr;
+      </button>
+    </div>
+
+    <canvas id="draw-canvas" class="pen-cursor"></canvas>
+    <div id="status"></div>
+  </div>
+
+  <div id="sidebar">
+    <h2>Tasks</h2>
+    <div class="score-box">
+      <strong id="score-val">0</strong>
+      correct out of <span id="score-tot">10</span>
+    </div>
+    <ul id="task-list"></ul>
+    <button id="back-btn" onclick="goBack()">&#8592; Back to Menu</button>
+  </div>
+
+</div>
+
+<!-- ═══════════════════════ COMPLETION ═══════════════════════ -->
+<div id="overlay">
+  <div class="card">
+    <h2>All Done!</h2>
+    <div class="big" id="final-score">0 / 10</div>
+    <p id="final-msg"></p>
+    <button onclick="goBack()">Play Again</button>
+  </div>
+</div>
+
+<script>
+"use strict";
+
+let tasks     = [];
+let taskIndex = 0;
+let score     = 0;
+let tool      = 'pen';
+let brushSize = 9;
+let isDrawing = false;
+let lastX = 0, lastY = 0;
+let submitting = false;
+
+const canvas = document.getElementById('draw-canvas');
+const ctx    = canvas.getContext('2d');
+
+function initCanvas() {
+  canvas.width  = canvas.offsetWidth;
+  canvas.height = canvas.offsetHeight;
+  fillBg();
+  applyCtx();
+}
+
+function fillBg() {
+  ctx.fillStyle = '#FDFAF3';
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+}
+
+function applyCtx() {
+  ctx.lineCap    = 'round';
+  ctx.lineJoin   = 'round';
+  ctx.lineWidth  = brushSize;
+  ctx.strokeStyle = '#1A1A1A';
+}
+
+function clearCanvas() { fillBg(); applyCtx(); }
+
+function setTool(t) {
+  tool = t;
+  document.getElementById('pen-btn').classList.toggle('on', t === 'pen');
+  document.getElementById('eraser-btn').classList.toggle('on', t === 'eraser');
+  canvas.className = t === 'pen' ? 'pen-cursor' : 'eraser-cursor';
+}
+
+function updateSize(v) {
+  brushSize = +v;
+  document.getElementById('size-lbl').textContent = v + ' px';
+}
+
+function makeTasks(mode) {
+  const out = [];
+  for (let i = 0; i < 10; i++) {
+    let a, b, answer, expr;
+    if (mode === 'addition') {
+      a = Math.floor(Math.random() * 60) + 1;
+      b = Math.floor(Math.random() * 60) + 1;
+      answer = a + b;
+      expr   = `${a} + ${b}`;
+    } else {
+      a = Math.floor(Math.random() * 80) + 20;
+      b = Math.floor(Math.random() * (a + 1));
+      answer = a - b;
+      expr   = `${a} − ${b}`;
+    }
+    out.push({ expr, answer, status: 'pending' });
+  }
+  return out;
+}
+
+function renderList() {
+  const ul = document.getElementById('task-list');
+  ul.innerHTML = '';
+  tasks.forEach((t, i) => {
+    const li  = document.createElement('li');
+    li.className = ['ti',
+      i === taskIndex && t.status === 'pending' ? 'active' : '',
+      t.status === 'correct' ? 'correct' : '',
+      t.status === 'wrong'   ? 'wrong'   : ''
+    ].filter(Boolean).join(' ');
+    const icon = t.status === 'correct' ? '&#10003;'
+               : t.status === 'wrong'  ? '&#10007;'
+               : i === taskIndex       ? '&#9998;'
+               : '';
+    li.innerHTML = `<span>${i + 1}. ${t.expr} = ?</span><span class="ic">${icon}</span>`;
+    ul.appendChild(li);
+  });
+}
+
+function showProblem() {
+  document.getElementById('current-problem').textContent =
+    taskIndex < tasks.length ? tasks[taskIndex].expr + ' = ?' : '—';
+}
+
+function startApp(mode) {
+  tasks     = makeTasks(mode);
+  taskIndex = 0;
+  score     = 0;
+
+  document.getElementById('score-val').textContent = '0';
+  document.getElementById('score-tot').textContent = tasks.length;
+  document.getElementById('status').textContent    = '';
+  document.getElementById('status').className      = '';
+
+  document.getElementById('landing').style.display = 'none';
+  document.getElementById('app').classList.add('visible');
+
+  renderList();
+  showProblem();
+  setTimeout(initCanvas, 30);
+}
+
+function goBack() {
+  document.getElementById('app').classList.remove('visible');
+  document.getElementById('overlay').classList.remove('show');
+  document.getElementById('landing').style.display = 'flex';
+  clearCanvas();
+}
+
+/* ── Drawing ── */
+function pos(e) {
+  const r   = canvas.getBoundingClientRect();
+  const src = e.touches ? e.touches[0] : e;
+  return [src.clientX - r.left, src.clientY - r.top];
+}
+
+function startStroke(e) {
+  isDrawing = true;
+  [lastX, lastY] = pos(e);
+  const r = (tool === 'eraser' ? brushSize * 3 : brushSize) / 2;
+  ctx.beginPath();
+  ctx.arc(lastX, lastY, r, 0, Math.PI * 2);
+  ctx.fillStyle = tool === 'eraser' ? '#FDFAF3' : '#1A1A1A';
+  ctx.fill();
+}
+
+function moveStroke(e) {
+  if (!isDrawing) return;
+  const [x, y] = pos(e);
+  ctx.beginPath();
+  ctx.moveTo(lastX, lastY);
+  ctx.lineTo(x, y);
+  ctx.strokeStyle = tool === 'eraser' ? '#FDFAF3' : '#1A1A1A';
+  ctx.lineWidth   = tool === 'eraser' ? brushSize * 3 : brushSize;
+  ctx.stroke();
+  [lastX, lastY] = [x, y];
+}
+
+function endStroke() { isDrawing = false; }
+
+canvas.addEventListener('mousedown',  startStroke);
+canvas.addEventListener('mousemove',  moveStroke);
+canvas.addEventListener('mouseup',    endStroke);
+canvas.addEventListener('mouseleave', endStroke);
+canvas.addEventListener('touchstart', e => { e.preventDefault(); startStroke(e); }, { passive: false });
+canvas.addEventListener('touchmove',  e => { e.preventDefault(); moveStroke(e);  }, { passive: false });
+canvas.addEventListener('touchend',   endStroke);
+
+/* ── Submit to server ── */
+async function submitAnswer() {
+  if (submitting || taskIndex >= tasks.length) return;
+
+  const statusEl  = document.getElementById('status');
+  const submitBtn = document.getElementById('submit-btn');
+  submitting          = true;
+  submitBtn.disabled  = true;
+
+  statusEl.className  = 'wait';
+  statusEl.innerHTML  = '<span class="spinner"></span>Analysing your handwriting…';
+
+  const dataURL    = canvas.toDataURL('image/png');
+  const base64Data = dataURL.split(',')[1];
+  const task       = tasks[taskIndex];
+
+  try {
+    const res = await fetch('/api/check', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ imageBase64: base64Data, problem: task.expr + ' = ?' })
+    });
+
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({ error: res.statusText }));
+      throw new Error(err.error || res.statusText);
+    }
+
+    const { recognized } = await res.json();
+
+    if (recognized === 'blank') {
+      statusEl.className  = 'err';
+      statusEl.textContent = 'Nothing written yet — draw your answer and try again.';
+      submitting = false; submitBtn.disabled = false;
+      return;
+    }
+
+    if (recognized === 'unclear') {
+      statusEl.className  = 'err';
+      statusEl.textContent = "Couldn’t read that — please write more clearly and try again.";
+      submitting = false; submitBtn.disabled = false;
+      return;
+    }
+
+    const userNum = parseInt(recognized, 10);
+    if (isNaN(userNum)) {
+      statusEl.className  = 'err';
+      statusEl.textContent = `Unrecognised response (“${recognized}”) — try writing more clearly.`;
+      submitting = false; submitBtn.disabled = false;
+      return;
+    }
+
+    if (userNum === task.answer) {
+      task.status = 'correct';
+      score++;
+      document.getElementById('score-val').textContent = score;
+      statusEl.className  = 'ok';
+      statusEl.textContent = `Correct! ${task.expr} = ${task.answer} ✓`;
+    } else {
+      task.status = 'wrong';
+      statusEl.className  = 'err';
+      statusEl.textContent = `Not quite — the answer is ${task.answer}. You wrote ${userNum}.`;
+    }
+
+    renderList();
+
+    setTimeout(() => {
+      taskIndex++;
+      clearCanvas();
+      statusEl.textContent = '';
+      statusEl.className   = '';
+      submitting           = false;
+      submitBtn.disabled   = false;
+
+      if (taskIndex >= tasks.length) showCompletion();
+      else { showProblem(); renderList(); }
+    }, 2200);
+
+  } catch (err) {
+    statusEl.className  = 'err';
+    statusEl.textContent = 'Error: ' + err.message;
+    console.error(err);
+    submitting = false; submitBtn.disabled = false;
+  }
+}
+
+function showCompletion() {
+  const pct = score / tasks.length;
+  document.getElementById('final-score').textContent = `${score} / ${tasks.length}`;
+  document.getElementById('final-msg').textContent   =
+      pct === 1  ? 'Perfect score! Outstanding work!'
+    : pct >= 0.8 ? 'Great job — almost perfect!'
+    : pct >= 0.6 ? 'Good effort! Keep practising.'
+    : pct >= 0.4 ? 'Room to grow — keep going!'
+    :              'Practice makes perfect — try again!';
+  document.getElementById('overlay').classList.add('show');
+}
+
+window.addEventListener('resize', () => {
+  if (document.getElementById('app').classList.contains('visible')) {
+    const img = ctx.getImageData(0, 0, canvas.width, canvas.height);
+    initCanvas();
+    ctx.putImageData(img, 0, 0);
+  }
+});
+</script>
+</body>
+</html>
