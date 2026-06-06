@@ -5,8 +5,14 @@ const path       = require('path');
 const app  = express();
 const port = process.env.PORT || 3000;
 
+const apiKey = (process.env.ANTHROPIC_API_KEY || '').trim();
+
 app.use(express.json({ limit: '10mb' }));
 app.use(express.static(path.join(__dirname, 'public')));
+
+app.get('/api/status', (req, res) => {
+  res.json({ keyConfigured: apiKey.length > 0 });
+});
 
 app.post('/api/check', async (req, res) => {
   const { imageBase64, problem } = req.body;
@@ -15,11 +21,11 @@ app.post('/api/check', async (req, res) => {
     return res.status(400).json({ error: 'Missing imageBase64 or problem' });
   }
 
-  if (!process.env.ANTHROPIC_API_KEY) {
+  if (!apiKey) {
     return res.status(500).json({ error: 'ANTHROPIC_API_KEY not configured on server' });
   }
 
-  const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
+  const client = new Anthropic({ apiKey });
 
   try {
     const message = await client.messages.create({
@@ -54,4 +60,5 @@ If the writing is unreadable, reply: unclear`
 
 app.listen(port, () => {
   console.log(`Math Canvas running on port ${port}`);
+  console.log(`ANTHROPIC_API_KEY: ${apiKey ? 'SET (' + apiKey.length + ' chars)' : 'NOT SET'}`);
 });
